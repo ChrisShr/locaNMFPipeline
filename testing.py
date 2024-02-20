@@ -146,7 +146,7 @@ else:
 # Plotting all the regions' components
 A_validmask=np.zeros((brainmask.shape[0],brainmask.shape[1])); A_validmask.fill(np.nan)
 for rdx, i in zip(region_idx, np.cumsum(region_ranks)-1):
-    fig, axs = plt.subplots(len(region_ranks), 3,
+    fig, axs = plt.subplots(1 + int((1+region_ranks[rdx]) / 4), 3,
                             figsize=(16,(1 + int((1+region_ranks[rdx]) / 4)) * 4))
     axs = axs.reshape((int(np.prod(axs.shape)),))
     A_validmask[brainmask] = locanmf_comps.distance.data[i].cpu()==0
@@ -154,10 +154,10 @@ for rdx, i in zip(region_idx, np.cumsum(region_ranks)-1):
     axs[0].set_title("Region: {}".format(rdx+1)); axs[0].axis('off')
 
     axs[1].imshow(A_reshape[:,:,i])
-    axs[1].set_title("LocaNMF A: {}".format(i+1)); axs[1].axis('off')
+    axs[1].set_title("LocaNMF: {}".format(i+1)); axs[1].axis('off')
     
     axs[2].plot(C[i,:3000].T,'r');
-    axs[2].set_title("LocaNMF Region: {}".format(i+1));axs[2].axis('off'); 
+    axs[2].set_title("LocaNMF Region: {}".format(i+1))
     axs[2].legend('LocaNMF')
     
     plt.show()
@@ -167,3 +167,29 @@ for rdx, i in zip(region_idx, np.cumsum(region_ranks)-1):
 # If lots of values close to the maximum, increase maxiter_lambda or lambda_step.
 plt.hist(np.log(locanmf_comps.lambdas.data.cpu()), bins=torch.unique(locanmf_comps.lambdas.data).shape[0])
 plt.show()
+
+sortvec=np.argsort(np.abs(areas))
+C=C[sortvec,:]
+A_reshape=A_reshape[:,:,sortvec]
+lambdas=np.squeeze(locanmf_comps.lambdas.data.cpu().numpy())
+lambdas=lambdas[sortvec]
+areas=areas[sortvec]
+areainds,areanames_all = postprocess.parse_areanames(areanames)
+areanames_area=[]
+for i,area in enumerate(areas):
+    areanames_area.append(areanames_all[areainds.index(area)])
+sio.savemat(datafolder+'locanmf_decomp_loc'+str(loc_thresh)+'.mat',
+            {'C':C,
+             'A':A_reshape,
+             'lambdas':locanmf_comps.lambdas.data.cpu().numpy(),
+             'areas':areas,
+             'r2_fit':r2_fit,
+             'time_ests':time_ests,
+             'areanames':areanames_area
+            })
+torch.cuda.empty_cache()
+print("     LocaNMF completed successfully in "+ str(time.time()-t0_global) + "\n")
+print("Postprocessing! \n")
+postprocess.plot_components(A_reshape,C,areas,atlas,areanames,datafolder)
+postprocess.plot_correlations(A_reshape,C,areas,atlas,areanames,datafolder)
+print("All Done! \n")
