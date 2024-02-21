@@ -35,7 +35,6 @@ V=arrays['Vc']
 U=arrays['Uc']
 brainmask=arrays['brainmask']==1
 del arrays
-
 # Check that data has the correct shapes. V [K_d x T], U [X x Y x K_d], brainmask [X x Y]
 # X/Y - Pixels for each frame
 # T -  time points
@@ -146,8 +145,8 @@ else:
 # Plotting all the regions' components
 A_validmask=np.zeros((brainmask.shape[0],brainmask.shape[1])); A_validmask.fill(np.nan)
 for rdx, i in zip(region_idx, np.cumsum(region_ranks)-1):
-    fig, axs = plt.subplots(1 + int((1+region_ranks[rdx]) / 4), 3,
-                            figsize=(16,(1 + int((1+region_ranks[rdx]) / 4)) * 4))
+    fig, axs = plt.subplots(1 + int((1+region_ranks[rdx]) / 3), 3,
+                            figsize=(16,(1 + int((1+region_ranks[rdx]) / 3)) * 4))
     axs = axs.reshape((int(np.prod(axs.shape)),))
     A_validmask[brainmask] = locanmf_comps.distance.data[i].cpu()==0
     axs[0].imshow(A_validmask)
@@ -159,7 +158,6 @@ for rdx, i in zip(region_idx, np.cumsum(region_ranks)-1):
     axs[2].plot(C[i,:3000].T,'r');
     axs[2].set_title("LocaNMF Region: {}".format(i+1))
     axs[2].legend('LocaNMF')
-    
     plt.show()
 
 # Plot the distribution of lambdas. 
@@ -178,6 +176,27 @@ areainds,areanames_all = postprocess.parse_areanames(areanames)
 areanames_area=[]
 for i,area in enumerate(areas):
     areanames_area.append(areanames_all[areainds.index(area)])
+
+'''
+# Plotting all the regions' components
+A_validmask=np.zeros((brainmask.shape[0],brainmask.shape[1])); A_validmask.fill(np.nan)
+for rdx, i in zip(region_idx, np.cumsum(region_ranks)-1):
+    fig, axs = plt.subplots(1 + int((1+region_ranks[rdx]) / 3), 3,
+                            figsize=(16,(1 + int((1+region_ranks[rdx]) / 3)) * 4))
+    axs = axs.reshape((int(np.prod(axs.shape)),))
+    A_validmask[brainmask] = locanmf_comps.distance.data[i].cpu()==0
+    axs[0].imshow(A_validmask)
+    axs[0].set_title("Region: {}".format(rdx+1)); axs[0].axis('off')
+
+    axs[1].imshow(A_reshape[:,:,i])
+    axs[1].set_title("LocaNMF: {}".format(areanames_all[i])); axs[1].axis('off')
+    
+    axs[2].plot(C[i,:3000].T,'r');
+    axs[2].set_title("LocaNMF Region: {}".format(i+1))
+    axs[2].legend('LocaNMF')
+    plt.show()
+'''
+
 sio.savemat(datafolder+'locanmf_decomp_loc'+str(loc_thresh)+'.mat',
             {'C':C,
              'A':A_reshape,
